@@ -465,6 +465,8 @@ describe('Collection', function () {
     updateTests.forEach(test => {
       it(test.title, function (done) {
         db.createCollection(test.collectionName, (err, collection) => {
+          expect(err).to.not.exist;
+
           collection.updateOne(
             test.filterObject,
             test.updateObject,
