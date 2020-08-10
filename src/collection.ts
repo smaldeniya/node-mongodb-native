@@ -750,7 +750,7 @@ export class Collection {
     options = options || {};
 
     // Run only against primary
-    options.readPreference = ReadPreference.PRIMARY;
+    options.readPreference = ReadPreference.primary;
 
     return executeOperation(
       this.s.topology,
@@ -784,7 +784,7 @@ export class Collection {
     const cursor = new CommandCursor(
       this.s.topology,
       new ListIndexesOperation(this, options),
-      options
+      options as Document
     );
 
     return cursor;
@@ -1628,7 +1628,7 @@ function _findAndModify(
   // Clone options
   options = Object.assign({}, options);
   // Force read preference primary
-  options.readPreference = ReadPreference.PRIMARY;
+  options.readPreference = ReadPreference.primary;
 
   return executeOperation(
     this.s.topology,
