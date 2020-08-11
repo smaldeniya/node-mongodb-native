@@ -784,7 +784,7 @@ export class Collection {
     const cursor = new CommandCursor(
       this.s.topology,
       new ListIndexesOperation(this, options),
-      options as Document
+      options
     );
 
     return cursor;
