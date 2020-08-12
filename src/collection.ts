@@ -88,7 +88,7 @@ const mergeKeys = ['ignoreUndefined'];
 
 export interface Collection {
   /** @deprecated */
-  find(query: any, options: any): Cursor;
+  find(query: any, options?: any): Cursor;
   insert(docs: any, options: any, callback: any): void;
   update(selector: any, update: any, options: any, callback: any): void;
   remove(selector: any, options: any, callback: any): void;
@@ -108,11 +108,6 @@ export interface Collection {
     callback: any
   ): void;
   removeMany(
-    filter: Document,
-    options?: DeleteOptions,
-    callback?: Callback<DeleteResult>
-  ): Promise<DeleteResult> | void;
-  removeOne(
     filter: Document,
     options?: DeleteOptions,
     callback?: Callback<DeleteResult>
@@ -431,10 +426,20 @@ export class Collection {
    * @param options Optional settings for the command
    * @param callback An optional callback, a Promise will be returned if none is provided
    */
+
+  updateOne(filter: Document, update: Document): Promise<UpdateResult>;
+  updateOne(filter: Document, update: Document, options: UpdateOptions): Promise<UpdateResult>;
+  updateOne(filter: Document, update: Document, callback: Callback<UpdateResult>): void;
   updateOne(
     filter: Document,
     update: Document,
-    options?: UpdateOptions,
+    options: UpdateOptions,
+    callback: Callback<UpdateResult>
+  ): void;
+  updateOne(
+    filter: Document,
+    update: Document,
+    options?: UpdateOptions | Callback<UpdateResult>,
     callback?: Callback<UpdateResult>
   ): Promise<UpdateResult> | void {
     if (typeof options === 'function') (callback = options), (options = {});
@@ -521,9 +526,14 @@ export class Collection {
    * @param options Optional settings for the command
    * @param callback An optional callback, a Promise will be returned if none is provided
    */
+
+  deleteOne(filter: Document): Promise<DeleteResult>;
+  deleteOne(filter: Document, options: DeleteOptions): Promise<DeleteResult>;
+  deleteOne(filter: Document, callback: Callback<DeleteResult>): void;
+  deleteOne(filter: Document, options: DeleteOptions, callback: Callback<DeleteResult>): void;
   deleteOne(
     filter: Document,
-    options?: DeleteOptions,
+    options?: DeleteOptions | Callback<DeleteResult>,
     callback?: Callback<DeleteResult>
   ): Promise<DeleteResult> | void {
     if (typeof options === 'function') (callback = options), (options = {});
@@ -542,6 +552,19 @@ export class Collection {
     );
   }
 
+  /** alias of deleteOne */
+  removeOne(filter: Document): Promise<DeleteResult>;
+  removeOne(filter: Document, options: DeleteOptions): Promise<DeleteResult>;
+  removeOne(filter: Document, callback: Callback<DeleteResult>): void;
+  removeOne(filter: Document, options: DeleteOptions, callback: Callback<DeleteResult>): void;
+  removeOne(
+    filter: Document,
+    options?: DeleteOptions | Callback<DeleteResult>,
+    callback?: Callback<DeleteResult>
+  ): Promise<DeleteResult> | void {
+    return this.deleteOne(filter, options as any, callback as any);
+  }
+
   /**
    * Delete multiple documents from a collection
    *
@@ -551,7 +574,7 @@ export class Collection {
    */
   deleteMany(
     filter: Document,
-    options?: DeleteOptions,
+    options?: DeleteOptions | Callback<DeleteResult>,
     callback?: Callback<DeleteResult>
   ): Promise<DeleteResult> | void {
     if (filter == null) {
@@ -606,7 +629,14 @@ export class Collection {
    * @param options Optional settings for the command
    * @param callback An optional callback, a Promise will be returned if none is provided
    */
-  drop(options?: DropCollectionOptions, callback?: Callback<boolean>): Promise<boolean> | void {
+  drop(): Promise<boolean>;
+  drop(callback: Callback<boolean>): void;
+  drop(options: DropCollectionOptions): Promise<boolean>;
+  drop(options: DropCollectionOptions, callback: Callback<boolean>): void;
+  drop(
+    options?: DropCollectionOptions | Callback<boolean>,
+    callback?: Callback<boolean>
+  ): Promise<boolean> | void {
     if (typeof options === 'function') (callback = options), (options = {});
     options = options || {};
 
@@ -1430,7 +1460,6 @@ Collection.prototype.update = deprecate(function (
 },
 'collection.update is deprecated. Use updateOne, updateMany, or bulkWrite instead.');
 
-Collection.prototype.removeOne = Collection.prototype.deleteOne;
 Collection.prototype.removeMany = Collection.prototype.deleteMany;
 
 /**

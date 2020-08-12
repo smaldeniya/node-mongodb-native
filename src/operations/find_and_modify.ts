@@ -3,7 +3,6 @@ import {
   maxWireVersion,
   applyRetryableWrites,
   decorateWithCollation,
-  applyWriteConcern,
   formattedOrderClause,
   hasAtomicOperators
 } from '../utils';
@@ -14,6 +13,7 @@ import type { Callback, Document } from '../types';
 import type { Server } from '../sdam/server';
 import type { Collection } from '../collection';
 import type { Sort } from './find';
+import { WriteConcern } from '../write_concern';
 
 export interface FindAndModifyOptions extends CommandOperationOptions {
   /** When false, returns the updated document rather than the original. The default is true. */
@@ -64,7 +64,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
   }
 
   execute(server: Server, callback: Callback<Document>): void {
-    const coll = this.collection;
+    const collection = this.collection;
     const query = this.query;
     const sort = formattedOrderClause(this.sort);
     const doc = this.doc;
@@ -72,7 +72,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
 
     // Create findAndModify command object
     const cmd: Document = {
-      findAndModify: coll.collectionName,
+      findAndModify: collection.collectionName,
       query: query
     };
 
@@ -104,14 +104,16 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
 
     // Either use override on the function, or go back to default on either the collection
     // level or db
-    options.serializeFunctions = options.serializeFunctions || coll.s.serializeFunctions;
+    options.serializeFunctions = options.serializeFunctions || collection.s.serializeFunctions;
 
     // No check on the documents
     options.checkKeys = false;
 
     // Final options for retryable writes and write concern
-    options = applyRetryableWrites(options, coll.s.db);
-    options = applyWriteConcern(options, { db: coll.s.db, collection: coll }, options);
+    options = applyRetryableWrites(options, collection.s.db);
+    // options = applyWriteConcern(options, { db: coll.s.db, collection: coll },
+    // options);
+    const writeConcern = WriteConcern.inherit(options, { collection, session: this.session });
 
     // Decorate the findAndModify command with the write Concern
     if (options.writeConcern) {
@@ -125,7 +127,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
 
     // Have we specified collation
     try {
-      decorateWithCollation(cmd, coll, options);
+      decorateWithCollation(cmd, collection, options);
     } catch (err) {
       return callback(err);
     }
@@ -133,7 +135,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
     if (options.hint) {
       // TODO: once this method becomes a CommandOperation we will have the server
       // in place to check.
-      const unacknowledgedWrite = options.writeConcern && options.writeConcern.w === 0;
+      const unacknowledgedWrite = writeConcern && writeConcern.w === 0;
       if (unacknowledgedWrite || maxWireVersion(server) < 8) {
         callback(
           new MongoError('The current topology does not support a hint on findAndModify commands')

@@ -1,6 +1,6 @@
 import { Aspect, OperationBase, OperationOptions } from './operation';
 import { ReadConcern } from '../read_concern';
-import { WriteConcern } from '../write_concern';
+import { WriteConcern, WriteConcernOptions } from '../write_concern';
 import { maxWireVersion, MongoDBNamespace } from '../utils';
 import { ReadPreference, ReadPreferenceLike } from '../read_preference';
 import { commandSupportsReadConcern, ClientSession } from '../sessions';
@@ -16,7 +16,10 @@ import type { CommandOptions } from '../cmap/wire_protocol/command';
 
 const SUPPORTS_WRITE_CONCERN_AND_COLLATION = 5;
 
-export interface CommandOperationOptions extends OperationOptions, BSONSerializeOptions {
+export interface CommandOperationOptions
+  extends WriteConcernOptions,
+    OperationOptions,
+    BSONSerializeOptions {
   fullResponse?: boolean;
   /** Specify a read concern and level for the collection. (only MongoDB 3.2 or higher supported) */
   readConcern?: ReadConcern;
@@ -24,8 +27,6 @@ export interface CommandOperationOptions extends OperationOptions, BSONSerialize
   readPreference?: ReadPreferenceLike;
   /** Specify ClientSession for this command */
   session?: ClientSession;
-  /** WriteConcern for this command */
-  writeConcern?: WriteConcern;
   /** Collation */
   collation?: any;
   maxTimeMS?: number;

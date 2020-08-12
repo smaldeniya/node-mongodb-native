@@ -1,3 +1,7 @@
+import type { Db } from './db';
+import type { Collection } from './collection';
+import type { ClientSession } from './sessions';
+
 export type W = number | 'majority';
 
 export interface WriteConcernOptions {
@@ -84,5 +88,32 @@ export class WriteConcern {
       return new WriteConcern(w, wtimeout ?? wtimeoutMS, j ?? journal, fsync);
     }
     return undefined;
+  }
+
+  static inherit(
+    options: WriteConcernOptions,
+    parent: {
+      db?: Db;
+      collection?: Collection;
+      session?: ClientSession;
+    }
+  ) {
+    const { session, collection } = parent;
+    const db = parent.db || (collection && collection.s.db) || undefined;
+
+    if (session && session.inTransaction()) return undefined;
+
+    const writeConcern = WriteConcern.fromOptions(options);
+    if (writeConcern) return writeConcern;
+
+    if (collection) {
+      const writeConcern = WriteConcern.fromOptions(collection.writeConcern);
+      if (writeConcern) return writeConcern;
+    }
+
+    if (db) {
+      const writeConcern = WriteConcern.fromOptions(db.writeConcern);
+      if (writeConcern) return writeConcern;
+    }
   }
 }
