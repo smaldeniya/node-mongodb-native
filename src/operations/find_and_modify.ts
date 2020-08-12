@@ -116,8 +116,8 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
     const writeConcern = WriteConcern.inherit(options, { collection, session: this.session });
 
     // Decorate the findAndModify command with the write Concern
-    if (options.writeConcern) {
-      cmd.writeConcern = options.writeConcern;
+    if (writeConcern) {
+      cmd.writeConcern = writeConcern;
     }
 
     // Have we specified bypassDocumentValidation

@@ -1,6 +1,7 @@
 import type { Db } from './db';
 import type { Collection } from './collection';
 import type { ClientSession } from './sessions';
+import { write } from 'fs';
 
 export type W = number | 'majority';
 
@@ -100,7 +101,6 @@ export class WriteConcern {
   ) {
     const { session, collection } = parent;
     const db = parent.db || (collection && collection.s.db) || undefined;
-
     if (session && session.inTransaction()) return undefined;
 
     const writeConcern = WriteConcern.fromOptions(options);
