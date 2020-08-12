@@ -3,6 +3,7 @@ import {
   maxWireVersion,
   applyRetryableWrites,
   decorateWithCollation,
+  applyWriteConcern,
   formattedOrderClause,
   hasAtomicOperators
 } from '../utils';
@@ -64,7 +65,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
   }
 
   execute(server: Server, callback: Callback<Document>): void {
-    const collection = this.collection;
+    const coll = this.collection;
     const query = this.query;
     const sort = formattedOrderClause(this.sort);
     const doc = this.doc;
@@ -72,7 +73,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
 
     // Create findAndModify command object
     const cmd: Document = {
-      findAndModify: collection.collectionName,
+      findAndModify: coll.collectionName,
       query: query
     };
 
@@ -104,20 +105,18 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
 
     // Either use override on the function, or go back to default on either the collection
     // level or db
-    options.serializeFunctions = options.serializeFunctions || collection.s.serializeFunctions;
+    options.serializeFunctions = options.serializeFunctions || coll.s.serializeFunctions;
 
     // No check on the documents
     options.checkKeys = false;
 
     // Final options for retryable writes and write concern
-    options = applyRetryableWrites(options, collection.s.db);
-    // options = applyWriteConcern(options, { db: coll.s.db, collection: coll },
-    // options);
-    const writeConcern = WriteConcern.inherit(options, { collection, session: this.session });
+    options = applyRetryableWrites(options, coll.s.db);
+    options = applyWriteConcern(options, { db: coll.s.db, collection: coll }, options);
 
     // Decorate the findAndModify command with the write Concern
-    if (writeConcern) {
-      cmd.writeConcern = writeConcern;
+    if (options.writeConcern) {
+      cmd.writeConcern = WriteConcern.fromOptions(options.writeConcern);
     }
 
     // Have we specified bypassDocumentValidation
@@ -127,7 +126,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
 
     // Have we specified collation
     try {
-      decorateWithCollation(cmd, collection, options);
+      decorateWithCollation(cmd, coll, options);
     } catch (err) {
       return callback(err);
     }
@@ -135,7 +134,7 @@ export class FindAndModifyOperation extends CommandOperation<FindAndModifyOption
     if (options.hint) {
       // TODO: once this method becomes a CommandOperation we will have the server
       // in place to check.
-      const unacknowledgedWrite = writeConcern && writeConcern.w === 0;
+      const unacknowledgedWrite = cmd.writeConcern && cmd.writeConcern.w === 0;
       if (unacknowledgedWrite || maxWireVersion(server) < 8) {
         callback(
           new MongoError('The current topology does not support a hint on findAndModify commands')

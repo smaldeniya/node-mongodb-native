@@ -1,4 +1,3 @@
-import { GridFsFile } from './download';
 import type { FindOptions } from './../operations/find';
 import type { Document, AnyError } from './../types.d';
 import type { Cursor } from './../cursor/cursor';
